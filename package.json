@@ -1,0 +1,21 @@
+{
+  "name": "motor-acoustic-detector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "电机异响检测台 — 纯前端 Web Audio 轴承故障检测（BPFO/BPFI/BSF/FTF + 包络谱 + 基线对比）",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval": "tsx scripts/run-eval.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
+  }
+}

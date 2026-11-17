@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>电机异响检测台</title>
+    <style>
+      :root {
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --text: #0f172a;
+        --muted: #64748b;
+        --primary: #2563eb;
+        --pass: #16a34a;
+        --fail: #dc2626;
+        --warn: #d97706;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 14px;
+      }
+      header {
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      header h1 { font-size: 18px; margin: 0; }
+      header .sub { color: var(--muted); font-size: 12px; }
+      main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
+      .grid { display: grid; gap: 16px; }
+      .grid-2 { grid-template-columns: 340px 1fr; }
+      @media (max-width: 980px) { .grid-2 { grid-template-columns: 1fr; } }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      .card h2 { font-size: 14px; margin: 0 0 12px; color: var(--muted); font-weight: 600; }
+      label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+      input, select {
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 13px;
+        font-family: inherit;
+      }
+      input:focus, select:focus { outline: 2px solid #bfdbfe; border-color: var(--primary); }
+      .row { display: flex; gap: 10px; }
+      .row > * { flex: 1; }
+      button {
+        padding: 9px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: #f1f5f9;
+        cursor: pointer;
+        font-size: 13px;
+        font-family: inherit;
+        font-weight: 500;
+      }
+      button:hover { background: #e2e8f0; }
+      button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+      button.primary:hover { background: #1d4ed8; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-block { width: 100%; margin-top: 14px; }
+      .verdict {
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        margin-bottom: 16px;
+      }
+      .verdict.pass { background: #f0fdf4; color: var(--pass); border: 1px solid #bbf7d0; }
+      .verdict.fail { background: #fef2f2; color: var(--fail); border: 1px solid #fecaca; }
+      .verdict.idle { background: #f8fafc; color: var(--muted); border: 1px dashed var(--border); }
+      .verdict .detail { font-size: 13px; font-weight: 400; letter-spacing: 0; margin-top: 6px; }
+      .channel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 10px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        background: #f8fafc;
+        font-size: 13px;
+      }
+      .channel.alarm { background: #fef2f2; border-left: 3px solid var(--fail); }
+      .channel .meta { color: var(--muted); font-size: 11px; }
+      .score-bar { height: 6px; background: #e2e8f0; border-radius: 3px; width: 90px; overflow: hidden; }
+      .score-bar > div { height: 100%; background: var(--primary); }
+      .channel.alarm .score-bar > div { background: var(--fail); }
+      canvas { width: 100%; height: 240px; display: block; }
+      .level-wrap { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+      .level-wrap > div { height: 100%; background: var(--primary); transition: width 0.1s; }
+      .baseline-status { font-size: 12px; padding: 8px 10px; border-radius: 6px; background: #f8fafc; }
+      .baseline-status.ok { background: #f0fdf4; color: var(--pass); }
+      .baseline-status.empty { background: #fffbeb; color: var(--warn); }
+      .log {
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        color: var(--muted);
+        max-height: 120px;
+        overflow-y: auto;
+        background: #0f172a;
+        color: #cbd5e1;
+        border-radius: 6px;
+        padding: 10px;
+        margin-top: 12px;
+      }
+      .log div { margin: 2px 0; }
+      .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+      .tabs button { padding: 5px 12px; font-size: 12px; }
+      .tabs button.active { background: var(--primary); color: #fff; }
+      .hidden { display: none; }
+      .pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #eff6ff; color: var(--primary); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>电机异响检测台</h1>
+      <span class="sub">Web Audio 轴承故障声学检测 · BPFO/BPFI/BSF/FTF + 共振解调 + 基线对比</span>
+      <span style="flex:1"></span>
+      <span class="pill" id="sampleRatePill">采样率 -</span>
+    </header>
+
+    <main class="grid grid-2">
+      <!-- 左栏：参数与操作 -->
+      <div class="grid">
+        <div class="card">
+          <h2>检测参数</h2>
+          <label>轴转速 (rpm)</label>
+          <input id="rpm" type="number" value="1500" min="1" />
+          <div class="row">
+            <div>
+              <label>滚动体数 N</label>
+              <input id="ballCount" type="number" value="9" />
+            </div>
+            <div>
+              <label>节径 D (mm)</label>
+              <input id="pitchD" type="number" value="39.04" step="0.01" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>滚珠径 d (mm)</label>
+              <input id="ballD" type="number" value="7.94" step="0.01" />
+            </div>
+            <div>
+              <label>接触角 (°)</label>
+              <input id="contactAngle" type="number" value="0" step="0.5" />
+            </div>
+          </div>
+          <label>录音时长 (秒)</label>
+          <input id="duration" type="number" value="5" min="1" max="30" step="1" />
+        </div>
+
+        <div class="card">
+          <h2>合格电机基线</h2>
+          <div id="baselineStatus" class="baseline-status empty">尚未建立基线</div>
+          <div class="row" style="margin-top:10px">
+            <button id="addBaselineBtn">录入 1 台合格机</button>
+            <button id="finalizeBaselineBtn">生成基线</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="exportBtn" disabled>导出</button>
+            <button id="importBtn">导入</button>
+          </div>
+          <button id="clearBaselineBtn" style="width:100%;margin-top:8px" disabled>清空基线</button>
+          <input id="importFile" type="file" accept="application/json" class="hidden" />
+        </div>
+
+        <div class="card">
+          <h2>操作</h2>
+          <button id="recordBtn" class="primary btn-block">● 开始录音并检测</button>
+          <label>实时电平</label>
+          <div class="level-wrap"><div id="levelBar" style="width:0%"></div></div>
+          <div id="log" class="log"></div>
+        </div>
+      </div>
+
+      <!-- 右栏：结论与谱图 -->
+      <div class="grid">
+        <div class="card">
+          <div id="verdict" class="verdict idle">
+            待检测
+            <div class="detail">录音后在此显示合格/不合格与故障类型</div>
+          </div>
+          <div id="channels"></div>
+        </div>
+
+        <div class="card">
+          <div class="tabs">
+            <button id="tabPsd" class="active">功率谱 PSD</button>
+            <button id="tabEnv">包络谱</button>
+          </div>
+          <canvas id="spectrumCanvas"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/ui/app.ts"></script>
+  </body>
+</html>
