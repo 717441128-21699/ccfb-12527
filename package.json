@@ -1,0 +1,22 @@
+{
+  "name": "piano-tuning-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "钢琴调律助手：泛音测量、非谐性拟合、拉伸曲线、拍频检测",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}
